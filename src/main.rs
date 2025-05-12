@@ -1,5 +1,7 @@
 use std::io::{self, Write};
 
+use commands::Command;
+
 mod commands;
 
 fn main() {
@@ -21,14 +23,16 @@ fn handle_input(input: &str) -> bool {
         .split(" ")
         .map(|arg| arg.trim())
         .collect();
-    let command: &str = args
+    let first_arg: &str = args
         .get(0)
         .unwrap();
-    match command {
-        "exit" => commands::exit(&args),
-        "echo" => commands::echo(&args),
-        _ => {
-            println!("{}: command not found", command);
+
+    let command_opt: Option<Command> = commands::get_command_type(first_arg);
+
+    match command_opt {
+        Some(command) => commands::execute_built_in_command(&command, &args),
+        None => {
+            println!("{}: command not found", first_arg);
             false
         }
     }
