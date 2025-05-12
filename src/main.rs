@@ -19,13 +19,14 @@ fn main() {
 fn handle_input(input: &str) -> bool {
     let args: Vec<&str> = input
         .split(" ")
+        .map(|arg| arg.trim())
         .collect();
     let command: &str = args
         .get(0)
-        .unwrap()
-        .trim();
+        .unwrap();
     match command {
         "exit" => commands::exit(&args),
+        "echo" => commands::echo(&args),
         _ => {
             println!("{}: command not found", command);
             false
