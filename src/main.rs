@@ -1,5 +1,6 @@
-#[allow(unused_imports)]
 use std::io::{self, Write};
+
+mod commands;
 
 fn main() {
     loop {
@@ -8,10 +9,26 @@ fn main() {
 
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
-        handle_command(input.as_str());
+        let exit: bool = handle_input(input.as_str());
+        if exit {
+            break; 
+        }
     }
 }
 
-fn handle_command(command: &str) {
-   println!("{}: command not found", command.trim()); 
+fn handle_input(input: &str) -> bool {
+    let args: Vec<&str> = input
+        .split(" ")
+        .collect();
+    let command: &str = args
+        .get(0)
+        .unwrap()
+        .trim();
+    match command {
+        "exit" => commands::exit(&args),
+        _ => {
+            println!("{}: command not found", command);
+            false
+        }
+    }
 }
