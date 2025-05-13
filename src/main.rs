@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use commands::BuiltInCommand;
+use commands::{run_executable, search_executable_in_path, BuiltInCommand};
 
 mod commands;
 
@@ -30,6 +30,11 @@ fn handle_input(input: &str) -> bool {
 
     if let Some(built_in_command) = BuiltInCommand::from_str(first_arg) {
         return built_in_command.run(&args)
+    }
+
+    if let Some(exec_path) = search_executable_in_path(first_arg) {
+        run_executable(&exec_path, &args);
+        return false
     }
 
     println!("{}: command not found", first_arg);

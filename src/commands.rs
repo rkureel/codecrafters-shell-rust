@@ -1,4 +1,4 @@
-use std::{env, fs, path::PathBuf};
+use std::{env, fs, path::PathBuf, process::Command};
 
 pub enum BuiltInCommand {
     Exit,
@@ -25,6 +25,30 @@ impl BuiltInCommand {
     }
 }
 
+pub fn search_executable_in_path(exec_name: &str) -> Option<PathBuf> {
+    let env_path: String = env::var("PATH").unwrap();
+    env_path.split(":")
+        .into_iter()
+        .filter_map(|path_str| fs::read_dir(path_str).ok())
+        .flat_map(|entry| {
+                entry.map(|e| e.unwrap().path())
+        })
+        .map(|path_buf| path_buf.to_owned())
+        .filter(|path| {
+            let file_name: &str = path.file_stem().unwrap().to_str().unwrap();
+            file_name.eq(exec_name)
+        })
+        .next()
+}
+
+pub fn run_executable(_path: &PathBuf, args: &Vec<&str>) {
+    let arguments: &[&str] = &args[1..];
+    Command::new(args[0])
+        .args(arguments)
+        .status()
+        .unwrap();
+}
+
 fn run_built_in_exit(_args: &Vec<&str>) -> bool {
     true
 }
@@ -44,7 +68,7 @@ fn run_built_in_type(args: &Vec<&str>) -> bool {
         return false;
     }
 
-    if let Some(path_buf) = search_executable_path(arg) {
+    if let Some(path_buf) = search_executable_in_path(arg) {
         let exec_path: &str = path_buf.as_path().to_str().unwrap();
         println!("{} is {}", arg, exec_path);
         return false;
@@ -54,23 +78,7 @@ fn run_built_in_type(args: &Vec<&str>) -> bool {
     false
 }
 
-fn search_executable_path(exec_name: &str) -> Option<PathBuf> {
-    let env_path: String = env::var("PATH").unwrap();
-    env_path.split(":")
-        .into_iter()
-        .filter_map(|path_str| fs::read_dir(path_str).ok())
-        .flat_map(|entry| {
-                entry.map(|e| e.unwrap().path())
-        })
-        .map(|path_buf| path_buf.to_owned())
-        .filter(|path| {
-            let file_name: &str = path.file_stem().unwrap().to_str().unwrap();
-            file_name.eq(exec_name)
-        })
-        .next()
-}
-
-
 fn print_cmd_not_found(cmd: &str) {
     println!("{}: not found", cmd);
 }
+
