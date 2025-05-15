@@ -16,7 +16,7 @@ impl Repl {
         Repl {state}
     }
 
-    pub fn start(&self) {
+    pub fn start(&mut self) {
         loop {
             print!("$ ");
             io::stdout().flush().unwrap();
@@ -30,7 +30,7 @@ impl Repl {
         }
     }
 
-    fn handle_input(&self, input: &str) -> bool {
+    fn handle_input(&mut self, input: &str) -> bool {
         let args: Vec<&str> = input
             .split(" ")
             .map(|arg| arg.trim())
@@ -41,7 +41,7 @@ impl Repl {
             .unwrap();
 
         if let Some(built_in_command) = BuiltInCommand::from_str(command) {
-            return built_in_command.run(&args, &self.state)
+            return built_in_command.run(&args, &mut self.state)
         }
 
         if let Some(exec_path) = commands::find_command_in_path(command) {

@@ -1,4 +1,4 @@
-use std::{env, fs, path::PathBuf, process::Command};
+use std::{env, fs, path::PathBuf, process::Command, str::FromStr};
 
 use crate::repl::State;
 
@@ -6,7 +6,8 @@ pub enum BuiltInCommand {
     Exit,
     Echo,
     Type,
-    Pwd
+    Pwd,
+    Cd
 }
 
 impl BuiltInCommand {
@@ -16,16 +17,18 @@ impl BuiltInCommand {
             "echo" => Some(BuiltInCommand::Echo),
             "type" => Some(BuiltInCommand::Type),
             "pwd" => Some(BuiltInCommand::Pwd),
+            "cd" => Some(BuiltInCommand::Cd),
             _ => None
         }
     }
 
-    pub fn run(&self, args: &Vec<&str>, state: &State) -> bool {
+    pub fn run(&self, args: &Vec<&str>, state: &mut State) -> bool {
         match self {
             Self::Exit => run_built_in_exit(args),
             Self::Echo => run_built_in_echo(args),
             Self::Type => run_built_in_type(args),
-            Self::Pwd => run_built_in_pwd(args, state)
+            Self::Pwd => run_built_in_pwd(args, state),
+            Self::Cd => run_built_in_cd(args, state)
         }
     }
 }
@@ -85,6 +88,12 @@ fn run_built_in_type(args: &Vec<&str>) -> bool {
 
 fn run_built_in_pwd(_args: &Vec<&str>, state: &State) -> bool {
     println!("{}", state.dir.to_str().unwrap());
+    false
+}
+
+fn run_built_in_cd(args: &Vec<&str>, state: &mut State) -> bool {
+    let dir = PathBuf::from_str(args.get(1).unwrap()).unwrap();
+    state.dir = dir;
     false
 }
 
