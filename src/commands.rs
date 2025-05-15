@@ -1,5 +1,5 @@
 use std::{env, fs, path::PathBuf, process::Command, str::FromStr};
-
+use anyhow::Result;
 use crate::repl::State;
 
 pub enum BuiltInCommand {
@@ -9,6 +9,7 @@ pub enum BuiltInCommand {
     Pwd,
     Cd
 }
+
 
 impl BuiltInCommand {
     pub fn from_str(arg: &str) -> Option<BuiltInCommand> {
@@ -22,11 +23,11 @@ impl BuiltInCommand {
         }
     }
 
-    pub fn run(&self, args: &Vec<&str>, state: &mut State) -> bool {
+    pub fn run(&self, args: &Vec<&str>, state: &mut State) -> Result<()> {
         match self {
-            Self::Exit => run_built_in_exit(args),
-            Self::Echo => run_built_in_echo(args),
-            Self::Type => run_built_in_type(args),
+            Self::Exit => run_built_in_exit(args, state),
+            Self::Echo => run_built_in_echo(args, state),
+            Self::Type => run_built_in_type(args, state),
             Self::Pwd => run_built_in_pwd(args, state),
             Self::Cd => run_built_in_cd(args, state)
         }
@@ -57,44 +58,45 @@ pub fn run_command_in_path(_path: &PathBuf, args: &Vec<&str>) {
         .unwrap();
 }
 
-fn run_built_in_exit(_args: &Vec<&str>) -> bool {
-    true
+fn run_built_in_exit(_args: &Vec<&str>, state: &mut State) -> Result<()> {
+    state.continue_repl = false;
+    Ok(())
 }
 
-fn run_built_in_echo(args: &Vec<&str>) -> bool {
+fn run_built_in_echo(args: &Vec<&str>, _state: &mut State) -> Result<()> {
     let output: String = args[1..]
         .join(" ");
     println!("{}", output);
-    false
+    Ok(())
 }
 
-fn run_built_in_type(args: &Vec<&str>) -> bool {
+fn run_built_in_type(args: &Vec<&str>, _state: &mut State) -> Result<()> {
     let arg: &str = args.get(1).unwrap();
     
     if let Some(_) = BuiltInCommand::from_str(arg) {
         println!("{} is a shell builtin", arg);
-        return false;
+        return Ok(());
     }
 
     if let Some(path_buf) = find_command_in_path(arg) {
         let exec_path: &str = path_buf.as_path().to_str().unwrap();
         println!("{} is {}", arg, exec_path);
-        return false;
+        return Ok(());
     }
 
     print_cmd_not_found(arg);
-    false
+    return Ok(());
 }
 
-fn run_built_in_pwd(_args: &Vec<&str>, state: &State) -> bool {
+fn run_built_in_pwd(_args: &Vec<&str>, state: &mut State) -> Result<()> {
     println!("{}", state.dir.to_str().unwrap());
-    false
+    return Ok(());
 }
 
-fn run_built_in_cd(args: &Vec<&str>, state: &mut State) -> bool {
+fn run_built_in_cd(args: &Vec<&str>, state: &mut State) -> Result<()> {
     let dir = PathBuf::from_str(args.get(1).unwrap()).unwrap();
     state.dir = dir;
-    false
+    return Ok(());
 }
 
 fn print_cmd_not_found(cmd: &str) {

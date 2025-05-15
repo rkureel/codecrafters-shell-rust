@@ -1,5 +1,7 @@
+use anyhow::Result;
+
 use crate::commands::{self, BuiltInCommand};
-use std::{io::{self, Write}, path::PathBuf};
+use std::{env, io::{self, Write}, path::PathBuf};
 
 
 pub struct Repl {
@@ -7,30 +9,37 @@ pub struct Repl {
 }
 
 pub struct State {
-    pub dir: PathBuf
+    pub dir: PathBuf,
+    pub continue_repl: bool
 }
 
 impl Repl {
 
-    pub fn new(state: State) -> Repl {
-        Repl {state}
+    pub fn new() -> Repl {
+        Repl {
+            state: State{
+                dir: env::current_dir().unwrap(),
+                continue_repl: true
+            }
+        }
     }
 
-    pub fn start(&mut self) {
+    pub fn start(&mut self) -> Result<()> {
         loop {
             print!("$ ");
             io::stdout().flush().unwrap();
 
             let mut input = String::new();
             io::stdin().read_line(&mut input).unwrap();
-            let exit: bool = self.handle_input(input.as_str());
-            if exit {
-                break; 
+            self.handle_input(input.as_str())?;
+            if !self.state.continue_repl {
+                break;
             }
         }
+        return Ok(())
     }
 
-    fn handle_input(&mut self, input: &str) -> bool {
+    fn handle_input(&mut self, input: &str) -> Result<()> {
         let args: Vec<&str> = input
             .split(" ")
             .map(|arg| arg.trim())
@@ -46,11 +55,11 @@ impl Repl {
 
         if let Some(exec_path) = commands::find_command_in_path(command) {
             commands::run_command_in_path(&exec_path, &args);
-            return false
+            return Ok(());
         }
 
         println!("{}: command not found", command);
-        false
+        Ok(())
     }
 
 }
