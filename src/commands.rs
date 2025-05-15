@@ -1,9 +1,12 @@
 use std::{env, fs, path::PathBuf, process::Command};
 
+use crate::repl::State;
+
 pub enum BuiltInCommand {
     Exit,
     Echo,
-    Type
+    Type,
+    Pwd
 }
 
 impl BuiltInCommand {
@@ -12,20 +15,22 @@ impl BuiltInCommand {
             "exit" => Some(BuiltInCommand::Exit),
             "echo" => Some(BuiltInCommand::Echo),
             "type" => Some(BuiltInCommand::Type),
+            "pwd" => Some(BuiltInCommand::Pwd),
             _ => None
         }
     }
 
-    pub fn run(&self, args: &Vec<&str>) -> bool {
+    pub fn run(&self, args: &Vec<&str>, state: &State) -> bool {
         match self {
             Self::Exit => run_built_in_exit(args),
             Self::Echo => run_built_in_echo(args),
-            Self::Type => run_built_in_type(args)
+            Self::Type => run_built_in_type(args),
+            Self::Pwd => run_built_in_pwd(args, state)
         }
     }
 }
 
-pub fn search_executable_in_path(exec_name: &str) -> Option<PathBuf> {
+pub fn find_command_in_path(exec_name: &str) -> Option<PathBuf> {
     let env_path: String = env::var("PATH").unwrap();
     env_path.split(":")
         .into_iter()
@@ -41,7 +46,7 @@ pub fn search_executable_in_path(exec_name: &str) -> Option<PathBuf> {
         .next()
 }
 
-pub fn run_executable(_path: &PathBuf, args: &Vec<&str>) {
+pub fn run_command_in_path(_path: &PathBuf, args: &Vec<&str>) {
     let arguments: &[&str] = &args[1..];
     Command::new(args[0])
         .args(arguments)
@@ -68,13 +73,18 @@ fn run_built_in_type(args: &Vec<&str>) -> bool {
         return false;
     }
 
-    if let Some(path_buf) = search_executable_in_path(arg) {
+    if let Some(path_buf) = find_command_in_path(arg) {
         let exec_path: &str = path_buf.as_path().to_str().unwrap();
         println!("{} is {}", arg, exec_path);
         return false;
     }
 
     print_cmd_not_found(arg);
+    false
+}
+
+fn run_built_in_pwd(_args: &Vec<&str>, state: &State) -> bool {
+    println!("{}", state.dir.to_str().unwrap());
     false
 }
 
