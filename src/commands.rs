@@ -93,14 +93,22 @@ fn run_built_in_pwd(_args: &Vec<&str>, state: &mut State) -> Result<()> {
 }
 
 fn run_built_in_cd(args: &Vec<&str>, state: &mut State) -> Result<()> {
-    let first_arg: &str = args.get(1).unwrap();
-    let dir_path = PathBuf::from(first_arg);
-    if dir_path.is_dir(){
-        state.dir = dir_path;
-    } else {
-        println!("cd: {}: No such file or directory", first_arg);
+    let arg: &str = args.get(1).unwrap();
+    let resolved_path: std::io::Result<PathBuf> = resolve_path(&mut state.dir, arg);
+    match resolved_path {
+        Ok(path) => {
+            state.dir = path;
+        }
+        Err(_) => {
+            println!("cd: {}: No such file or directory", arg);
+        }
     }
     return Ok(());
+}
+
+fn resolve_path(current_dir: &mut PathBuf, arg: &str) -> std::io::Result<PathBuf> {
+    current_dir.push(arg);
+    current_dir.canonicalize()
 }
 
 fn print_cmd_not_found(cmd: &str) {
