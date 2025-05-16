@@ -1,4 +1,4 @@
-use std::{env, fs, path::PathBuf, process::Command, str::FromStr};
+use std::{env, fs, path::PathBuf, process::Command};
 use anyhow::Result;
 use crate::repl::State;
 
@@ -9,7 +9,6 @@ pub enum BuiltInCommand {
     Pwd,
     Cd
 }
-
 
 impl BuiltInCommand {
     pub fn from_str(arg: &str) -> Option<BuiltInCommand> {
@@ -94,8 +93,13 @@ fn run_built_in_pwd(_args: &Vec<&str>, state: &mut State) -> Result<()> {
 }
 
 fn run_built_in_cd(args: &Vec<&str>, state: &mut State) -> Result<()> {
-    let dir = PathBuf::from_str(args.get(1).unwrap()).unwrap();
-    state.dir = dir;
+    let first_arg: &str = args.get(1).unwrap();
+    let dir_path = PathBuf::from(first_arg);
+    if dir_path.is_dir(){
+        state.dir = dir_path;
+    } else {
+        println!("cd: {}: No such file or directory", first_arg);
+    }
     return Ok(());
 }
 
