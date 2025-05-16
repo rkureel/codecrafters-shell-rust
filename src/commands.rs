@@ -1,4 +1,4 @@
-use std::{env, fs, path::PathBuf, process::Command};
+use std::{env, fs, path::{Path, PathBuf}, process::Command};
 use anyhow::Result;
 use crate::repl::State;
 
@@ -106,9 +106,15 @@ fn run_built_in_cd(args: &Vec<&str>, state: &mut State) -> Result<()> {
     return Ok(());
 }
 
-fn resolve_path(current_dir: &mut PathBuf, arg: &str) -> std::io::Result<PathBuf> {
-    current_dir.push(arg);
-    current_dir.canonicalize()
+fn resolve_path(current_dir_path: &mut PathBuf, arg: &str) -> std::io::Result<PathBuf> {
+    let mut arg_path: PathBuf = PathBuf::from(arg);
+    if arg_path.starts_with("~") {
+        let home_dir_path: PathBuf = PathBuf::from(env::var("HOME").unwrap());
+        let stripped_path: &Path = arg_path.strip_prefix("~").unwrap();
+        arg_path = home_dir_path.join(stripped_path);
+    }
+    let new_path = current_dir_path.join(arg_path);
+    new_path.canonicalize()
 }
 
 fn print_cmd_not_found(cmd: &str) {
