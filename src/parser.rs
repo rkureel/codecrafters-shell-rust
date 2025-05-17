@@ -58,14 +58,14 @@ pub fn parse_input(input: &str) -> Vec<String> {
             }
             Mode::Escape => {
                 match ch {
-                    '\n' | '$' | '`' | '\\' | '"' => {
+                    '\n' | '$' | '`' | '"' | '\\' => {
                         current_word.pop();
                     }
-                    _ => {
-                        mode = Mode::DoubleQuotes;
-                        current_word.push(ch);
-                    }
+                    _ => ()
                 }
+                mode = Mode::DoubleQuotes;
+                current_word.push(ch);
+
             }
             Mode::Preserve => {
                 mode = Mode::Normal;
