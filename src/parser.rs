@@ -1,7 +1,9 @@
 enum Mode {
     Normal,
     SingleQuotes,
-    DoubleQuotes
+    DoubleQuotes,
+    Escape,
+    Preserve
 }
 
 pub fn parse_input(input: &str) -> Vec<String> {
@@ -10,56 +12,74 @@ pub fn parse_input(input: &str) -> Vec<String> {
     let mut current_word: Vec<char> = Vec::new();
 
     for ch in input.chars() {
-        match ch {
-            '\n' => {
-                if !current_word.is_empty() {
-                    args.push(current_word.into_iter().collect());
-                }
-                break;
-            }
-            '\'' => {
-                match mode {
-                    Mode::Normal => {
+        match mode {
+            Mode::Normal => {
+                match ch {
+                    '\n' | ' ' => {
+                        append_word_to_args(&mut current_word, &mut args);
+                    }
+                    '\'' => {
                         mode = Mode::SingleQuotes;
                     }
-                    Mode::SingleQuotes => {
-                        mode = Mode::Normal;
-                    }
-                    Mode::DoubleQuotes => {
-                        current_word.push(ch);
-                    }
-                }
-            }
-            '"' => {
-                match mode {
-                    Mode::Normal => {
+                    '"' => {
                         mode = Mode::DoubleQuotes;
                     }
-                    Mode::DoubleQuotes => {
-                        mode = Mode::Normal;
-                    }
-                    Mode::SingleQuotes => ()
-                }
-            }
-            ' ' => {
-                match mode {
-                    Mode::Normal => {
-                        if !current_word.is_empty() {
-                            args.push(current_word.iter().collect()); 
-                            current_word.clear();
-                        }
+                    '\\' => {
+                        mode = Mode::Preserve;
                     }
                     _ => {
                         current_word.push(ch);
                     }
                 }
             }
-            other => {
-                current_word.push(other);
+            Mode::SingleQuotes => {
+                match ch {
+                    '\'' => {
+                        mode = Mode::Normal;
+                    }
+                    _ => {
+                        current_word.push(ch);
+                    }
+                }
             }
-        }
+            Mode::DoubleQuotes => {
+                match ch {
+                    '"' => {
+                        mode = Mode::Normal;
+                    }
+                    '\\' => {
+                        mode = Mode::Escape;
+                        current_word.push(ch);
+                    }
+                    _ => {
+                        current_word.push(ch);
+                    }
+                }
+            }
+            Mode::Escape => {
+                match ch {
+                    '\n' | '$' | '`' | '\\' | '"' => {
+                        current_word.pop();
+                    }
+                    _ => {
+                        mode = Mode::DoubleQuotes;
+                        current_word.push(ch);
+                    }
+                }
+            }
+            Mode::Preserve => {
+                mode = Mode::Normal;
+                current_word.push(ch);
+            }
+        };
     }
 
     args
 }
 
+fn append_word_to_args(word: &mut Vec<char>, args: &mut Vec<String>) {
+    if !word.is_empty() {
+        args.push(word.iter().collect());
+        word.clear();
+    }
+}
