@@ -40,11 +40,7 @@ impl Repl {
     }
 
     fn handle_input(&mut self, input: &str) -> Result<()> {
-        let args: Vec<&str> = input
-            .split(" ")
-            .map(|arg| arg.trim())
-            .collect();
-
+        let args: Vec<String> = Repl::parse_input(input);
         let command: &str = args
             .get(0)
             .unwrap();
@@ -62,5 +58,54 @@ impl Repl {
         Ok(())
     }
 
+    fn parse_input(input: &str) -> Vec<String> {
+        enum Mode {
+            Normal,
+            SingleQuotes
+        }
+
+        let mut args: Vec<String> = Vec::new();
+        let mut mode: Mode = Mode::Normal;
+        let mut current_word: Vec<char> = Vec::new();
+
+        for ch in input.chars() {
+            match ch {
+                '\n' => {
+                    if !current_word.is_empty() {
+                        args.push(current_word.into_iter().collect());
+                    }
+                    break;
+                }
+                '\'' => {
+                    match mode {
+                        Mode::Normal => {
+                            mode = Mode::SingleQuotes;
+                        }
+                        Mode::SingleQuotes => {
+                            mode = Mode::Normal;
+                        }
+                    }
+                }
+                ' ' => {
+                    match mode {
+                        Mode::Normal => {
+                            if !current_word.is_empty() {
+                                args.push(current_word.iter().collect()); 
+                                current_word.clear();
+                            }
+                        }
+                        Mode::SingleQuotes => {
+                            current_word.push(ch);
+                        }
+                    }
+                }
+                other => {
+                    current_word.push(other);
+                }
+            }
+        }
+
+        args
+    }
 }
 

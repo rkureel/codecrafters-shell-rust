@@ -22,7 +22,7 @@ impl BuiltInCommand {
         }
     }
 
-    pub fn run(&self, args: &Vec<&str>, state: &mut State) -> Result<()> {
+    pub fn run(&self, args: &Vec<String>, state: &mut State) -> Result<()> {
         match self {
             Self::Exit => run_built_in_exit(args, state),
             Self::Echo => run_built_in_echo(args, state),
@@ -49,27 +49,27 @@ pub fn find_command_in_path(exec_name: &str) -> Option<PathBuf> {
         .next()
 }
 
-pub fn run_command_in_path(_path: &PathBuf, args: &Vec<&str>) {
-    let arguments: &[&str] = &args[1..];
-    Command::new(args[0])
+pub fn run_command_in_path(_path: &PathBuf, args: &Vec<String>) {
+    let arguments: &[String] = &args[1..];
+    Command::new(&args[0])
         .args(arguments)
         .status()
         .unwrap();
 }
 
-fn run_built_in_exit(_args: &Vec<&str>, state: &mut State) -> Result<()> {
+fn run_built_in_exit(_args: &Vec<String>, state: &mut State) -> Result<()> {
     state.continue_repl = false;
     Ok(())
 }
 
-fn run_built_in_echo(args: &Vec<&str>, _state: &mut State) -> Result<()> {
+fn run_built_in_echo(args: &Vec<String>, _state: &mut State) -> Result<()> {
     let output: String = args[1..]
         .join(" ");
     println!("{}", output);
     Ok(())
 }
 
-fn run_built_in_type(args: &Vec<&str>, _state: &mut State) -> Result<()> {
+fn run_built_in_type(args: &Vec<String>, _state: &mut State) -> Result<()> {
     let arg: &str = args.get(1).unwrap();
     
     if let Some(_) = BuiltInCommand::from_str(arg) {
@@ -87,12 +87,12 @@ fn run_built_in_type(args: &Vec<&str>, _state: &mut State) -> Result<()> {
     return Ok(());
 }
 
-fn run_built_in_pwd(_args: &Vec<&str>, state: &mut State) -> Result<()> {
+fn run_built_in_pwd(_args: &Vec<String>, state: &mut State) -> Result<()> {
     println!("{}", state.dir.to_str().unwrap());
     return Ok(());
 }
 
-fn run_built_in_cd(args: &Vec<&str>, state: &mut State) -> Result<()> {
+fn run_built_in_cd(args: &Vec<String>, state: &mut State) -> Result<()> {
     let arg: &str = args.get(1).unwrap();
     let resolved_path: std::io::Result<PathBuf> = resolve_path(&mut state.dir, arg);
     match resolved_path {
