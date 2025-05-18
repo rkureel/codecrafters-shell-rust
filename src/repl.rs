@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crate::{commands::{self, ExecutionOutput}, parser};
-use std::{env, fs, io::{self, Write}, path::PathBuf};
+use std::{env, fs::{File, OpenOptions}, io::{self, Write}, path::PathBuf};
 
 pub struct Repl {
     state: State
@@ -13,6 +13,8 @@ pub struct State {
 
 const STDOUT_REDIRECTION_SYMBOLS: [&str;2] = [">", "1>"];
 const STDERR_REDIRECTION_SYMBOLS: [&str;1] = ["2>"];
+const STDOUT_APPEND_SYMBOLS: [&str;2] = [">>", "1>>"];
+const STDERR_APPEND_SYMBOLS: [&str;1] = ["2>>"];
 
 impl Repl {
 
@@ -48,8 +50,7 @@ impl Repl {
 
         let command_args: Vec<&str> = all_args
             .iter()
-            .take_while(|arg| !STDOUT_REDIRECTION_SYMBOLS.contains(&arg.as_str()) 
-                && !STDERR_REDIRECTION_SYMBOLS.contains(&arg.as_str()))
+            .take_while(|arg| !Repl::is_redirection_symbol(arg))
             .map(|s| s.as_str())
             .collect();
 
@@ -70,25 +71,50 @@ impl Repl {
     }
 
     fn handle_exection_output(args: &Vec<String>, output: &ExecutionOutput) {
-        let mut stderr_iter = args.iter().skip_while(|arg| !STDERR_REDIRECTION_SYMBOLS.contains(&arg.as_str()));
-        match stderr_iter.nth(1) {
-            Some(path) => {
-                fs::write(path, &output.stderr).unwrap();
+        let mut stderr_iter = args.iter().skip_while(|arg| !STDERR_REDIRECTION_SYMBOLS.contains(&arg.as_str())
+            && !STDERR_APPEND_SYMBOLS.contains(&arg.as_str()));
+        match stderr_iter.next() {
+            Some(symbol) => {
+                let path: &str = stderr_iter.next().unwrap().as_str();
+                let append: bool = STDERR_APPEND_SYMBOLS.contains(&symbol.as_str());
+                let mut file: File = OpenOptions::new()
+                   .write(true)
+                   .append(append)
+                   .create(true)
+                   .open(path)
+                   .unwrap();
+                file.write(&output.stderr.as_bytes()).unwrap();
             }
             None => {
                 print!("{}", &output.stderr);
             }
         }
-           
-        let mut stdout_iter = args.iter().skip_while(|arg| !STDOUT_REDIRECTION_SYMBOLS.contains(&arg.as_str()));
-        match stdout_iter.nth(1) {
-            Some(path) => {
-                fs::write(path, &output.stdout).unwrap();
+
+        let mut stdout_iter = args.iter().skip_while(|arg| !STDOUT_REDIRECTION_SYMBOLS.contains(&arg.as_str())
+            && !STDOUT_APPEND_SYMBOLS.contains(&arg.as_str()));
+        match stdout_iter.next() {
+            Some(symbol) => {
+                let path: &str = stdout_iter.next().unwrap().as_str();
+                let append: bool = STDOUT_APPEND_SYMBOLS.contains(&symbol.as_str());
+                let mut file: File = OpenOptions::new()
+                    .write(true)
+                    .append(append)
+                    .create(true)
+                    .open(path)
+                    .unwrap();
+                file.write(&output.stdout.as_bytes()).unwrap();
             }
             None => {
                 print!("{}", &output.stdout);
             }
         }
+    }
+
+    fn is_redirection_symbol(arg: &str) -> bool {
+        STDOUT_REDIRECTION_SYMBOLS.contains(&arg)
+            || STDERR_REDIRECTION_SYMBOLS.contains(&arg)
+            || STDOUT_APPEND_SYMBOLS.contains(&arg)
+            || STDERR_APPEND_SYMBOLS.contains(&arg)
     }
 }
 
