@@ -1,22 +1,29 @@
 use std::{env, path::{Path, PathBuf}};
-use anyhow::Result;
 use crate::commands::{Execute, State};
+
+use super::ExecutionOutput;
 
 pub struct Cd {}
 
 impl Execute for Cd {
-    fn execute(&self, args: &Vec<String>, state: &mut State) -> Result<()> {
+    fn execute(&self, args: &Vec<&str>, state: &mut State) -> ExecutionOutput {
         let arg: &str = args.get(1).unwrap();
         let resolved_path: std::io::Result<PathBuf> = resolve_path(&mut state.dir, arg);
-        match resolved_path {
+        return match resolved_path {
             Ok(path) => {
                 state.dir = path;
+                ExecutionOutput{
+                    stdout: String::new(),
+                    stderr: String::new()
+                }
             }
             Err(_) => {
-                println!("cd: {}: No such file or directory", arg);
+                ExecutionOutput {
+                    stdout: String::new(),
+                    stderr: format!("cd: {}: No such file or directory\n", arg)
+                }
             }
         }
-        return Ok(());
     }
 }
 

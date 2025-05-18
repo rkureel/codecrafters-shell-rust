@@ -1,5 +1,4 @@
-use std::{env, fs, path::{PathBuf}, process::Command};
-use anyhow::Result;
+use std::{env, fs, path::PathBuf, process::{Command, Output}};
 use cd::Cd;
 use echo::Echo;
 use exit::Exit;
@@ -13,8 +12,14 @@ mod exit;
 mod pwd;
 mod typ;
 
+#[derive(Debug)]
+pub struct ExecutionOutput {
+    pub stdout: String,
+    pub stderr: String
+}
+
 pub trait Execute {
-    fn execute(&self, args: &Vec<String>, state: &mut State) -> Result<()>;
+    fn execute(&self, args: &Vec<&str>, state: &mut State) -> ExecutionOutput;
 }
 
 pub fn from_str(arg: &str) -> Option<Box<dyn Execute>> {
@@ -44,11 +49,15 @@ pub fn find_executable_in_path(exec_name: &str) -> Option<PathBuf> {
         .next()
 }
 
-pub fn execute_executable_in_path(_path: &PathBuf, args: &Vec<String>) {
-    let arguments: &[String] = &args[1..];
-    Command::new(&args[0])
+pub fn execute_executable_in_path(_path: &PathBuf, args: &Vec<&str>) -> ExecutionOutput {
+    let arguments: &[&str] = &args[1..];
+    let output: Output = Command::new(&args[0])
         .args(arguments)
-        .status()
+        .output()
         .unwrap();
+    ExecutionOutput {
+        stdout: String::from_utf8(output.stdout).unwrap(),
+        stderr: String::from_utf8(output.stderr).unwrap()
+    }
 }
 

@@ -1,6 +1,6 @@
 use anyhow::Result;
-use crate::{commands, parser};
-use std::{env, io::{self, Write}, path::PathBuf};
+use crate::{commands::{self, ExecutionOutput}, parser};
+use std::{env, fs, io::{self, Write}, path::PathBuf};
 
 pub struct Repl {
     state: State
@@ -38,22 +38,47 @@ impl Repl {
     }
 
     fn handle_input(&mut self, input: &str) -> Result<()> {
-        let args: Vec<String> = parser::parse_input(input);
-        let command: &str = args
+        let all_args: Vec<String> = parser::parse_input(input);
+        let command: &str = all_args
             .get(0)
             .unwrap();
 
+        let command_args: Vec<&str> = all_args
+            .iter()
+            .take_while(|arg| *arg != ">" && *arg != "1>")
+            .map(|s| s.as_str())
+            .collect();
+
         if let Some(built_in_command) = commands::from_str(command) {
-            return built_in_command.execute(&args, &mut self.state)
+            let output: ExecutionOutput = built_in_command.execute(&command_args, &mut self.state);
+            Repl::handle_exection_output(&all_args, &output);
+            return Ok(());
         }
 
         if let Some(exec_path) = commands::find_executable_in_path(command) {
-            commands::execute_executable_in_path(&exec_path, &args);
+            let output: ExecutionOutput = commands::execute_executable_in_path(&exec_path, &command_args);
+            Repl::handle_exection_output(&all_args, &output);
             return Ok(());
         }
 
         println!("{}: command not found", command);
         Ok(())
+    }
+
+    fn handle_exection_output(args: &Vec<String>, output: &ExecutionOutput) {
+        if !output.stderr.is_empty() {
+            print!("{}", &output.stderr);
+        }
+           
+        let mut iterator = args.iter().skip_while(|arg| *arg != ">" && *arg != "1>");
+        match iterator.nth(1) {
+            Some(path) => {
+                fs::write(path, &output.stdout).unwrap();
+            }
+            None => {
+                print!("{}", &output.stdout);
+            }
+        }
     }
 }
 
