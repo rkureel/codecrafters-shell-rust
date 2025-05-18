@@ -1,9 +1,17 @@
 use anyhow::Result;
-use crate::{commands::{self, ExecutionOutput}, parser};
-use std::{env, fs::{File, OpenOptions}, io::{self, Write}, path::PathBuf};
+use reader::CustomHelper;
+use rustyline::{error::ReadlineError, history::DefaultHistory, Editor};
+use crate::commands::{self, ExecutionOutput};
+use std::{env, fs::{File, OpenOptions}, io::Write, path::PathBuf};
+
+
+mod parser;
+mod reader;
+mod completer;
 
 pub struct Repl {
-    state: State
+    state: State,
+    reader: Editor<CustomHelper, DefaultHistory> 
 }
 
 pub struct State {
@@ -19,24 +27,37 @@ const STDERR_APPEND_SYMBOLS: [&str;1] = ["2>>"];
 impl Repl {
 
     pub fn new() -> Repl {
+        
         Repl {
             state: State{
                 dir: env::current_dir().unwrap(),
                 continue_repl: true
-            }
+            },
+            reader: reader::new_editor()
+
         }
     }
 
     pub fn start(&mut self) -> Result<()> {
         loop {
-            print!("$ ");
-            io::stdout().flush().unwrap();
-
-            let mut input = String::new();
-            io::stdin().read_line(&mut input).unwrap();
-            self.handle_input(input.as_str())?;
-            if !self.state.continue_repl {
-                break;
+            let input: rustyline::Result<String> = self.reader.readline("$ ");
+            match input {
+                Ok(line) => {
+                    self.handle_input(line.as_str())?;
+                    if !self.state.continue_repl {
+                        break; 
+                    }
+                }
+                Err(ReadlineError::Interrupted) => {
+                    break
+                },
+                Err(ReadlineError::Eof) => {
+                    break
+                },
+                Err(err) => {
+                    println!("Error: {:?}", err);
+                    break
+                }
             }
         }
         return Ok(())

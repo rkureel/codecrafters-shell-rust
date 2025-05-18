@@ -74,6 +74,10 @@ pub fn parse_input(input: &str) -> Vec<String> {
         };
     }
 
+    if !current_word.is_empty() {
+        append_word_to_args(&mut current_word, &mut args); 
+    }
+
     args
 }
 
