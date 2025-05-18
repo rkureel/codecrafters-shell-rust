@@ -1,8 +1,6 @@
 use anyhow::Result;
-
-use crate::{commands::{self, BuiltInCommand}, parser};
+use crate::{commands, parser};
 use std::{env, io::{self, Write}, path::PathBuf};
-
 
 pub struct Repl {
     state: State
@@ -45,12 +43,12 @@ impl Repl {
             .get(0)
             .unwrap();
 
-        if let Some(built_in_command) = BuiltInCommand::from_str(command) {
-            return built_in_command.run(&args, &mut self.state)
+        if let Some(built_in_command) = commands::from_str(command) {
+            return built_in_command.execute(&args, &mut self.state)
         }
 
-        if let Some(exec_path) = commands::find_command_in_path(command) {
-            commands::run_command_in_path(&exec_path, &args);
+        if let Some(exec_path) = commands::find_executable_in_path(command) {
+            commands::execute_executable_in_path(&exec_path, &args);
             return Ok(());
         }
 
