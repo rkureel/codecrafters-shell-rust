@@ -11,6 +11,9 @@ pub struct State {
     pub continue_repl: bool
 }
 
+const STDOUT_REDIRECTION_SYMBOLS: [&str;2] = [">", "1>"];
+const STDERR_REDIRECTION_SYMBOLS: [&str;1] = ["2>"];
+
 impl Repl {
 
     pub fn new() -> Repl {
@@ -45,7 +48,8 @@ impl Repl {
 
         let command_args: Vec<&str> = all_args
             .iter()
-            .take_while(|arg| *arg != ">" && *arg != "1>")
+            .take_while(|arg| !STDOUT_REDIRECTION_SYMBOLS.contains(&arg.as_str()) 
+                && !STDERR_REDIRECTION_SYMBOLS.contains(&arg.as_str()))
             .map(|s| s.as_str())
             .collect();
 
@@ -66,12 +70,18 @@ impl Repl {
     }
 
     fn handle_exection_output(args: &Vec<String>, output: &ExecutionOutput) {
-        if !output.stderr.is_empty() {
-            print!("{}", &output.stderr);
+        let mut stderr_iter = args.iter().skip_while(|arg| !STDERR_REDIRECTION_SYMBOLS.contains(&arg.as_str()));
+        match stderr_iter.nth(1) {
+            Some(path) => {
+                fs::write(path, &output.stderr).unwrap();
+            }
+            None => {
+                print!("{}", &output.stderr);
+            }
         }
            
-        let mut iterator = args.iter().skip_while(|arg| *arg != ">" && *arg != "1>");
-        match iterator.nth(1) {
+        let mut stdout_iter = args.iter().skip_while(|arg| !STDOUT_REDIRECTION_SYMBOLS.contains(&arg.as_str()));
+        match stdout_iter.nth(1) {
             Some(path) => {
                 fs::write(path, &output.stdout).unwrap();
             }
