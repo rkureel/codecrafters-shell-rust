@@ -6,7 +6,7 @@ use rustyline_derive::{Completer, Helper, Highlighter, Hinter, Validator};
 pub struct CustomHelper {
     #[rustyline(Completer)]
     completer: BuiltInCommandCompleter,
-    highlighter: MatchingBracketHighlighter,
+    _highlighter: MatchingBracketHighlighter,
     #[rustyline(Validator)]
     validator: MatchingBracketValidator,
     #[rustyline(Hinter)]
@@ -19,7 +19,7 @@ pub fn new_editor() -> Editor<CustomHelper, DefaultHistory> {
         .build();
     let helper: CustomHelper = CustomHelper {
         completer: BuiltInCommandCompleter::new(),
-        highlighter: MatchingBracketHighlighter::new(),
+        _highlighter: MatchingBracketHighlighter::new(),
         validator: MatchingBracketValidator::new(),
         hinter: HistoryHinter::new()
     };

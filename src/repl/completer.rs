@@ -20,7 +20,8 @@ impl Completer for BuiltInCommandCompleter {
                 return Ok((0, vec![String::from("exit ")]));
             }
             _ => {
-                return Ok((0, vec![String::new()]));
+                print!("\x07");
+                return Ok((line.len()-1, vec![]));
             }
         }
     }
